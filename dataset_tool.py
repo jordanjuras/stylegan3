@@ -315,85 +315,75 @@ def open_dest(dest: str) -> Tuple[str, Callable[[str, Union[bytes, str]], None],
         return dest, folder_write_bytes, lambda: None
 
 #----------------------------------------------------------------------------
+def convert(source: str,
+            dest: str,
+            max_images: Optional[int],
+            transform: Optional[str],
+            resolution: Optional[Tuple[int, int]]):     
 
-@click.command()
-@click.pass_context
-@click.option('--source', help='Directory or archive name for input dataset', required=True, metavar='PATH')
-@click.option('--dest', help='Output directory or archive name for output dataset', required=True, metavar='PATH')
-@click.option('--max-images', help='Output only up to `max-images` images', type=int, default=None)
-@click.option('--transform', help='Input crop/resize mode', type=click.Choice(['center-crop', 'center-crop-wide']))
-@click.option('--resolution', help='Output resolution (e.g., \'512x512\')', metavar='WxH', type=parse_tuple)
-def convert_dataset(
-    ctx: click.Context,
-    source: str,
-    dest: str,
-    max_images: Optional[int],
-    transform: Optional[str],
-    resolution: Optional[Tuple[int, int]]
-):
     """Convert an image dataset into a dataset archive usable with StyleGAN2 ADA PyTorch.
 
-    The input dataset format is guessed from the --source argument:
+        The input dataset format is guessed from the --source argument:
 
-    \b
-    --source *_lmdb/                    Load LSUN dataset
-    --source cifar-10-python.tar.gz     Load CIFAR-10 dataset
-    --source train-images-idx3-ubyte.gz Load MNIST dataset
-    --source path/                      Recursively load all images from path/
-    --source dataset.zip                Recursively load all images from dataset.zip
+        \b
+        --source *_lmdb/                    Load LSUN dataset
+        --source cifar-10-python.tar.gz     Load CIFAR-10 dataset
+        --source train-images-idx3-ubyte.gz Load MNIST dataset
+        --source path/                      Recursively load all images from path/
+        --source dataset.zip                Recursively load all images from dataset.zip
 
-    Specifying the output format and path:
+        Specifying the output format and path:
 
-    \b
-    --dest /path/to/dir                 Save output files under /path/to/dir
-    --dest /path/to/dataset.zip         Save output files into /path/to/dataset.zip
+        \b
+        --dest /path/to/dir                 Save output files under /path/to/dir
+        --dest /path/to/dataset.zip         Save output files into /path/to/dataset.zip
 
-    The output dataset format can be either an image folder or an uncompressed zip archive.
-    Zip archives makes it easier to move datasets around file servers and clusters, and may
-    offer better training performance on network file systems.
+        The output dataset format can be either an image folder or an uncompressed zip archive.
+        Zip archives makes it easier to move datasets around file servers and clusters, and may
+        offer better training performance on network file systems.
 
-    Images within the dataset archive will be stored as uncompressed PNG.
-    Uncompresed PNGs can be efficiently decoded in the training loop.
+        Images within the dataset archive will be stored as uncompressed PNG.
+        Uncompresed PNGs can be efficiently decoded in the training loop.
 
-    Class labels are stored in a file called 'dataset.json' that is stored at the
-    dataset root folder.  This file has the following structure:
+        Class labels are stored in a file called 'dataset.json' that is stored at the
+        dataset root folder.  This file has the following structure:
 
-    \b
-    {
-        "labels": [
-            ["00000/img00000000.png",6],
-            ["00000/img00000001.png",9],
-            ... repeated for every image in the datase
-            ["00049/img00049999.png",1]
-        ]
-    }
+        \b
+        {
+            "labels": [
+                ["00000/img00000000.png",6],
+                ["00000/img00000001.png",9],
+                ... repeated for every image in the datase
+                ["00049/img00049999.png",1]
+            ]
+        }
 
-    If the 'dataset.json' file cannot be found, the dataset is interpreted as
-    not containing class labels.
+        If the 'dataset.json' file cannot be found, the dataset is interpreted as
+        not containing class labels.
 
-    Image scale/crop and resolution requirements:
+        Image scale/crop and resolution requirements:
 
-    Output images must be square-shaped and they must all have the same power-of-two
-    dimensions.
+        Output images must be square-shaped and they must all have the same power-of-two
+        dimensions.
 
-    To scale arbitrary input image size to a specific width and height, use the
-    --resolution option.  Output resolution will be either the original
-    input resolution (if resolution was not specified) or the one specified with
-    --resolution option.
+        To scale arbitrary input image size to a specific width and height, use the
+        --resolution option.  Output resolution will be either the original
+        input resolution (if resolution was not specified) or the one specified with
+        --resolution option.
 
-    Use the --transform=center-crop or --transform=center-crop-wide options to apply a
-    center crop transform on the input image.  These options should be used with the
-    --resolution option.  For example:
+        Use the --transform=center-crop or --transform=center-crop-wide options to apply a
+        center crop transform on the input image.  These options should be used with the
+        --resolution option.  For example:
 
-    \b
-    python dataset_tool.py --source LSUN/raw/cat_lmdb --dest /tmp/lsun_cat \\
-        --transform=center-crop-wide --resolution=512x384
-    """
+        \b
+        python dataset_tool.py --source LSUN/raw/cat_lmdb --dest /tmp/lsun_cat \\
+            --transform=center-crop-wide --resolution=512x384
+        """
 
     PIL.Image.init() # type: ignore
 
-    if dest == '':
-        ctx.fail('--dest output filename or directory must not be an empty string')
+    # if dest == '':
+    #     ctx.fail('--dest output filename or directory must not be an empty string')
 
     num_files, input_iter = open_dataset(source, max_images=max_images)
     archive_root_dir, save_bytes, close_dest = open_dest(dest)
@@ -449,6 +439,23 @@ def convert_dataset(
     }
     save_bytes(os.path.join(archive_root_dir, 'dataset.json'), json.dumps(metadata))
     close_dest()
+
+@click.command()
+@click.pass_context
+@click.option('--source', help='Directory or archive name for input dataset', required=True, metavar='PATH')
+@click.option('--dest', help='Output directory or archive name for output dataset', required=True, metavar='PATH')
+@click.option('--max-images', help='Output only up to `max-images` images', type=int, default=None)
+@click.option('--transform', help='Input crop/resize mode', type=click.Choice(['center-crop', 'center-crop-wide']))
+@click.option('--resolution', help='Output resolution (e.g., \'512x512\')', metavar='WxH', type=parse_tuple)
+def convert_dataset(
+    ctx: click.Context,
+    source: str,
+    dest: str,
+    max_images: Optional[int],
+    transform: Optional[str],
+    resolution: Optional[Tuple[int, int]]
+):
+    convert(source,dest,max_images,transform,resolution)
 
 #----------------------------------------------------------------------------
 
