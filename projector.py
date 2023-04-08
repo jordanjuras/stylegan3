@@ -176,7 +176,7 @@ def run_projection_batch(
             G,
             target=torch.tensor(target_uint8.transpose([2, 0, 1]), device=device), # pylint: disable=not-callable
             num_steps=num_steps,
-            device=G.device,
+            device=device,
             verbose=True
         )
         print (f'Elapsed (img_{file_ctr}): {(perf_counter()-start_time):.1f} s')
