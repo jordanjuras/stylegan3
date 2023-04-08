@@ -196,7 +196,7 @@ def run_projection_batch(
 
         file_ctr += 1
 
-    style_space_latents_save_path = output_dir_path / 'projected_w.npz'
+    style_space_latents_save_path = output_dir_path / 'projected_w'
     np.save(style_space_latents_save_path.as_posix(), w_dict)
 
     return w_dict
