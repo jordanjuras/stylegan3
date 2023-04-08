@@ -161,7 +161,7 @@ def run_projection_batch(
     target_dir_path = Path (target_dir)
     file_ctr = 0
 
-    w_list = []
+    w_dict = {}
 
     for file_path in target_dir_path.iterdir():
         if file_path.is_dir() or file_path.name[0] == '.':
@@ -191,16 +191,14 @@ def run_projection_batch(
         project_save_path = output_dir_path / f'proj_{file_ctr}.png'
         PIL.Image.fromarray(synth_image, 'RGB').save(f'{project_save_path.as_posix()}')
 
-        w_list.append(projected_w.unsqueeze(0).cpu().numpy())
+        w_dict[file_path.as_posix()] = projected_w.unsqueeze(0).cpu().numpy()
 
         file_ctr += 1
 
     style_space_latents_save_path = output_dir_path / 'projected_w.npz'
-    ws_latents = np.vstack(w_list)
+    np.save(style_space_latents_save_path.as_posix(), w_dict)
 
-    np.savez(style_space_latents_save_path.as_posix(), ws_latents=ws_latents)
-
-    return ws
+    return w_dict
 
 
 @click.command()
