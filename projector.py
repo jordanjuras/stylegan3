@@ -157,7 +157,7 @@ def run_projection_batch(
     torch.manual_seed(seed)
 
     output_dir_path = Path(output_dir)
-    output_dir_path.mkdir(parents=True, exist_ok=False)
+    output_dir_path.mkdir(parents=True, exist_ok=True)
 
     target_dir_path = Path (target_dir)
     file_ctr = 0
