@@ -146,6 +146,7 @@ def load_target_image(target_fname: Path, image_resolution):
 #----------------------------------------------------------------------------
 def run_projection_batch(
     G,
+    device,
     target_dir: str,
     output_dir: str,
     seed: int=303,
@@ -173,7 +174,7 @@ def run_projection_batch(
         start_time = perf_counter()
         projected_w_steps = project(
             G,
-            target=torch.tensor(target_uint8.transpose([2, 0, 1]), device=G.device), # pylint: disable=not-callable
+            target=torch.tensor(target_uint8.transpose([2, 0, 1]), device=device), # pylint: disable=not-callable
             num_steps=num_steps,
             device=G.device,
             verbose=True
