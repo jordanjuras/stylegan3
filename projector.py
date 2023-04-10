@@ -194,7 +194,7 @@ def run_projection_batch(
 
         dict_entry = {}
         dict_entry['ws'] = projected_w.unsqueeze(0).cpu().numpy()
-        dict_entry['loss'] = loss.cpu().numpy()
+        dict_entry['loss'] = loss.detach().cpu().numpy()
         w_dict[file_path.as_posix()] = dict_entry
 
         file_ctr += 1
