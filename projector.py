@@ -28,6 +28,7 @@ def project(
     target: torch.Tensor, # [C,H,W] and dynamic range [0,255], W & H must match G output resolution
     *,
     num_steps                  = 1000,
+    w_style_freedom            = True,
     w_avg_samples              = 10000,
     initial_learning_rate      = 0.1,
     initial_noise_factor       = 0.05,
@@ -69,7 +70,12 @@ def project(
     target_features = vgg16(target_images, resize_images=False, return_lpips=True)
 
     w_opt = torch.tensor(w_avg, dtype=torch.float32, device=device, requires_grad=True) # pylint: disable=not-callable
-    w_out = torch.zeros([num_steps] + list(w_opt.shape[1:]), dtype=torch.float32, device=device)
+    if w_style_freedom:
+        w_opt = w_opt.repeat([1, G.mapping.num_ws, 1])
+        w_out = torch.zeros_like(w_opt, dtype=torch.float32, device=device)
+    else:
+        w_out = torch.zeros(list(w_opt.shape[1:]), dtype=torch.float32, device=device)
+
     optimizer = torch.optim.Adam([w_opt] + list(noise_bufs.values()), betas=(0.9, 0.999), lr=initial_learning_rate)
 
     # Init noise.
@@ -90,7 +96,10 @@ def project(
 
         # Synth images from opt_w.
         w_noise = torch.randn_like(w_opt) * w_noise_scale
-        ws = (w_opt + w_noise).repeat([1, G.mapping.num_ws, 1])
+        ws = (w_opt + w_noise)
+        if not w_style_freedom:
+            ws = ws.repeat([1, G.mapping.num_ws, 1])
+
         synth_images = G.synthesis(ws, noise_mode='const')
 
         # Downsample image to 256x256 if it's larger than that. VGG was built for 224x224 images.
@@ -120,8 +129,11 @@ def project(
         optimizer.step()
         logprint(f'step {step+1:>4d}/{num_steps}: dist {dist:<4.2f} loss {float(loss):<5.2f}')
 
-        # Save projected W for each optimization step.
-        w_out[step] = w_opt.detach()[0]
+        # Save W
+        if w_style_freedom:
+            w_out = w_opt.detach()
+        else:
+            w_out = w_opt.detach()[0]
 
         # Normalize noise.
         with torch.no_grad():
@@ -129,7 +141,10 @@ def project(
                 buf -= buf.mean()
                 buf *= buf.square().mean().rsqrt()
 
-    return w_out.repeat([1, G.mapping.num_ws, 1]), loss
+    if w_style_freedom:
+        return w_out, loss
+    else:
+        return w_out.repeat([1, G.mapping.num_ws, 1]), loss
 
 #----------------------------------------------------------------------------
 def load_target_image(target_fname: Path, image_resolution):
