@@ -129,7 +129,7 @@ def project(
                 buf -= buf.mean()
                 buf *= buf.square().mean().rsqrt()
 
-    return w_out.repeat([1, G.mapping.num_ws, 1])
+    return w_out.repeat([1, G.mapping.num_ws, 1]), loss
 
 #----------------------------------------------------------------------------
 def load_target_image(target_fname: Path, image_resolution):
@@ -172,7 +172,7 @@ def run_projection_batch(
 
         # Optimize projection.
         start_time = perf_counter()
-        projected_w_steps = project(
+        projected_w_steps, loss = project(
             G,
             target=torch.tensor(target_uint8.transpose([2, 0, 1]), device=device), # pylint: disable=not-callable
             num_steps=num_steps,
@@ -192,7 +192,10 @@ def run_projection_batch(
         project_save_path = output_dir_path / f'proj_{file_ctr}.png'
         PIL.Image.fromarray(synth_image, 'RGB').save(f'{project_save_path.as_posix()}')
 
-        w_dict[file_path.as_posix()] = projected_w.unsqueeze(0).cpu().numpy()
+        dict_entry = {}
+        dict_entry['ws'] = projected_w.unsqueeze(0).cpu().numpy()
+        dict_entry['loss'] = loss
+        w_dict[file_path.as_posix()] = dict_entry
 
         file_ctr += 1
 
