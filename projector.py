@@ -71,7 +71,7 @@ def project(
 
     w_opt = torch.tensor(w_avg, dtype=torch.float32, device=device, requires_grad=True) # pylint: disable=not-callable
     if w_style_freedom:
-        w_opt = w_opt.repeat([1, G.mapping.num_ws, 1])
+        w_opt = torch.tensor(w_opt.repeat([1, G.mapping.num_ws, 1]), dtype=torch.float32, device=device, requires_grad=True)
         w_out = torch.zeros_like(w_opt, dtype=torch.float32, device=device)
     else:
         w_out = torch.zeros(list(w_opt.shape[1:]), dtype=torch.float32, device=device)
